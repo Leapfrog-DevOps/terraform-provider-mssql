@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -9,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	_ "github.com/microsoft/go-mssqldb"
 	"os"
 	"strconv"
 )
@@ -40,6 +42,7 @@ type mssqlProvider struct {
 	// version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
+	client  *sql.DB
 	version string
 }
 
@@ -190,6 +193,27 @@ func (p *mssqlProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	if port == 0 {
 		port = 1433
 	}
+
+	connString := fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=master",
+		user,
+		password,
+		host,
+		port,
+	)
+
+	client, err := sql.Open("sqlserver", connString)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to ping DB", err.Error())
+		return
+	}
+	if err := client.PingContext(ctx); err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to connecte to SQL Server",
+			fmt.Sprintf("Ping failed: %s", err.Error()),
+		)
+	}
+	resp.DataSourceData = client
+	resp.ResourceData = client
 }
 
 // DataSources defines the data sources implemented in the provider.
@@ -201,5 +225,7 @@ func (p *mssqlProvider) DataSources(_ context.Context) []func() datasource.DataS
 
 // Resources defines the resources implemented in the provider.
 func (p *mssqlProvider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		NewDatabaseResource,
+	}
 }
