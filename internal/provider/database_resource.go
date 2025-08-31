@@ -99,7 +99,7 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 	checkOwnrStmt := "SELECT COUNT(*) FROM sys.syslogins WHERE name = @owner"
 	err := r.client.QueryRowContext(ctx, checkOwnrStmt, sql.Named("owner", owner)).Scan(&userExists)
 	if err != nil {
-		resp.Diagnostics.AddError("Error checking for owner user", fmt.Sprintf("Unable to check if '%s' exists: %s", owner, err.Error()))
+		resp.Diagnostics.AddError("Error checking for owner", fmt.Sprintf("Unable to check if '%s' exists: %s", owner, err.Error()))
 		return
 	}
 	if !userExists {
@@ -118,7 +118,7 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 	// SQL statement to set the owner to 'sa'
-	setOwnerStmt := fmt.Sprintf("ALTER AUTHORIZATION ON DATABASE::appdb TO %s;", owner)
+	setOwnerStmt := fmt.Sprintf("ALTER AUTHORIZATION ON DATABASE::%s TO %s;", name, owner)
 	_, err = r.client.ExecContext(ctx, setOwnerStmt)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating database", err.Error())
@@ -129,14 +129,59 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 
 // Read refreshes the Terraform state with the latest data.
 func (r *databaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state databaseResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	row := r.client.QueryRowContext(ctx, "SELECT name FROM sys.databases where name=@db", sql.Named("db", state.Name.ValueString()))
+	var name string
+	err := row.Scan(&name)
+	if err == sql.ErrNoRows {
+		resp.State.RemoveResource(ctx)
+		return
+	} else if err != nil {
+		resp.Diagnostics.AddError("Error reading database", err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *databaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data databaseResourceModel
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// only owner can be changed
+	_, err := r.client.ExecContext(ctx, fmt.Sprintf("ALTER AUTHORIZATION on DATABASE::[%s] TO %s", data.Name.ValueString(), data.Owner.ValueString()))
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating database", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...) // Save state
+
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *databaseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data databaseResourceModel
+	diags := req.State.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, err := r.client.ExecContext(ctx, fmt.Sprintf("DROP DATABASE [%s]", data.Name.ValueString()))
+	if err != nil {
+		resp.Diagnostics.AddError("Error deleting database", err.Error())
+		return
+	}
+
 }
 
 func (r *databaseResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
