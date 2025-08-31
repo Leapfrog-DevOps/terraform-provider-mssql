@@ -117,7 +117,7 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("Error creating database", err.Error())
 		return
 	}
-	// SQL statement to set the owner to 'sa'
+	// SQL statement to set the owner
 	setOwnerStmt := fmt.Sprintf("ALTER AUTHORIZATION ON DATABASE::%s TO %s;", name, owner)
 	_, err = r.client.ExecContext(ctx, setOwnerStmt)
 	if err != nil {
