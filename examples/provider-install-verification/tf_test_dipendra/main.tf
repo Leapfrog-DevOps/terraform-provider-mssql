@@ -9,7 +9,7 @@ terraform{
 provider "mssql" {
   host="localhost"
   user="sa"
-  password="YourStrong!Passw0rd"
+  password="Coredev0ps"
   
 }
 data "mssql_data" "example"{
@@ -17,7 +17,7 @@ data "mssql_data" "example"{
 }
 
 resource "mssql_database" "appdb"{
-  name="appdb"
+  name="appdbasd"
   owner="sa" 
 }
 
