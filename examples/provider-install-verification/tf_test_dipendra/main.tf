@@ -21,5 +21,11 @@ resource "mssql_database" "appdb"{
   owner="sa" 
 }
 
+resource "mssql_login" "app_login" {
+  name             = "app_user1"
+  password         = "SuperSecretPassword123!"
+  type             = "sql"     # options: "sql" or "windows"
+  default_database = "master"  # Optional, defaults to master
+}
 
 
