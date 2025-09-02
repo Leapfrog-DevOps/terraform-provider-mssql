@@ -35,4 +35,3 @@ website/vendor
 *.winfile eol=crlf
 
 #ignore
-examples/
