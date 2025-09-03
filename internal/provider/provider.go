@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -11,8 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	_ "github.com/microsoft/go-mssqldb"
-	"os"
-	"strconv"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -227,5 +228,6 @@ func (p *mssqlProvider) DataSources(_ context.Context) []func() datasource.DataS
 func (p *mssqlProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewDatabaseResource,
+		NewMssqlLoginResource,
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
@@ -151,20 +152,29 @@ func (r *databaseResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *databaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data databaseResourceModel
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+	var plan databaseResourceModel
+	var state databaseResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)   // Read plan
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...) // Read state
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// only owner can be changed
-	_, err := r.client.ExecContext(ctx, fmt.Sprintf("ALTER AUTHORIZATION on DATABASE::[%s] TO %s", data.Name.ValueString(), data.Owner.ValueString()))
+	// If name changed, rename database
+	if plan.Name.ValueString() != state.Name.ValueString() {
+		_, err := r.client.ExecContext(ctx, fmt.Sprintf("ALTER DATABASE [%s] MODIFY NAME = [%s]", state.Name.ValueString(), plan.Name.ValueString()))
+		if err != nil {
+			resp.Diagnostics.AddError("Error renaming database", err.Error())
+			return
+		}
+		state.Name = plan.Name
+	}
+	// Change owner
+	_, err := r.client.ExecContext(ctx, fmt.Sprintf("ALTER AUTHORIZATION on DATABASE::[%s] TO %s", plan.Name.ValueString(), plan.Owner.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating database", err.Error())
 		return
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...) // Save state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...) // Save state
 
 }
 
