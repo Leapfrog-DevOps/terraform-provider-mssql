@@ -7,25 +7,21 @@ terraform{
 }
 
 provider "mssql" {
-  host="localhost"
-  user="sa"
-  password="Coredev0ps"
-  
+  user="admin"  
 }
 data "mssql_data" "example"{
   
 }
 
-resource "mssql_database" "appdb"{
-  name="appdbasd"
-  owner="sa" 
-}
-
-resource "mssql_login" "app_login" {
-  name             = "app_user1"
+resource "mssql_login" "login_test" {
+  name             = "testuser"
   password         = "SuperSecretPassword123!"
   type             = "sql"     # options: "sql" or "windows"
   default_database = "master"  # Optional, defaults to master
 }
+resource "mssql_database" "database_test"{
+  name="testdb"
+}
+
 
 
