@@ -31,7 +31,6 @@ type databaseResourceModel struct {
 	Name               types.String `tfsdk:"name"`
 	Collation          types.String `tfsdk:"collation"`
 	CompatibilityLevel types.Int32  `tfsdk:"compatibility_level"`
-	Owner              types.String `tfsdk:"owner"`
 	Id                 types.String `tfsdk:"id"`
 }
 
@@ -66,10 +65,6 @@ func (r *databaseResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:            true,
 				Default:             int32default.StaticInt32(150),
 			},
-			"owner": schema.StringAttribute{
-				MarkdownDescription: "Database owner",
-				Required:            true,
-			},
 			"id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Database identifier.",
@@ -93,36 +88,17 @@ func (r *databaseResource) Create(ctx context.Context, req resource.CreateReques
 	name := data.Name.ValueString()
 	collation := data.Collation.ValueString()
 	compatibilityLevel := data.CompatibilityLevel.ValueInt32()
-	owner := data.Owner.ValueString()
 
-	// Check if owner exists
-	var userExists bool
-	checkOwnrStmt := "SELECT COUNT(*) FROM sys.syslogins WHERE name = @owner"
-	err := r.client.QueryRowContext(ctx, checkOwnrStmt, sql.Named("owner", owner)).Scan(&userExists)
-	if err != nil {
-		resp.Diagnostics.AddError("Error checking for owner", fmt.Sprintf("Unable to check if '%s' exists: %s", owner, err.Error()))
-		return
-	}
-	if !userExists {
-		resp.Diagnostics.AddError("User does not exist", fmt.Sprintf("The '%s' user is required to create the database and assign ownership. Please ensure the '%s' user exists before proceeding.", owner, owner))
-		return
-	}
 	// Create Statement
 	createStmt := fmt.Sprintf(`
 							CREATE DATABASE %s 
 							COLLATE %s
 							WITH COMPATIBILITY_LEVEL=%d ;
 	`, name, collation, compatibilityLevel)
-	_, err = r.client.ExecContext(ctx, createStmt)
+	_, err := r.client.ExecContext(ctx, createStmt)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating database", err.Error())
 		return
-	}
-	// SQL statement to set the owner
-	setOwnerStmt := fmt.Sprintf("ALTER AUTHORIZATION ON DATABASE::%s TO %s;", name, owner)
-	_, err = r.client.ExecContext(ctx, setOwnerStmt)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating database", err.Error())
 	}
 	data.Id = types.StringValue(data.Name.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...) // Save state
@@ -167,12 +143,6 @@ func (r *databaseResource) Update(ctx context.Context, req resource.UpdateReques
 			return
 		}
 		state.Name = plan.Name
-	}
-	// Change owner
-	_, err := r.client.ExecContext(ctx, fmt.Sprintf("ALTER AUTHORIZATION on DATABASE::[%s] TO %s", plan.Name.ValueString(), plan.Owner.ValueString()))
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating database", err.Error())
-		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...) // Save state
 

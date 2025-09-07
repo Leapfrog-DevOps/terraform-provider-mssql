@@ -58,15 +58,15 @@ func (p *mssqlProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
 			"user": schema.StringAttribute{
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
 			"password": schema.StringAttribute{
-				Required:  true,
+				Optional:  true,
 				Sensitive: true,
 			},
 			"port": schema.Int32Attribute{
@@ -159,7 +159,7 @@ func (p *mssqlProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		port = config.Port.ValueInt32()
 	}
 	if !config.DefaultDb.IsNull() {
-		defaultDb = config.Host.ValueString()
+		defaultDb = config.DefaultDb.ValueString()
 	}
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
