@@ -233,5 +233,7 @@ func (p *mssqlProvider) Resources(_ context.Context) []func() resource.Resource 
 		NewDatabaseResource,
 		NewMssqlLoginResource,
 		NewMssqlUserResource,
+		NewMssqlRoleResource,
+		NewMssqlRoleAssignmentResource,
 	}
 }
