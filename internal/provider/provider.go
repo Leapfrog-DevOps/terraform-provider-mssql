@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -229,5 +232,6 @@ func (p *mssqlProvider) Resources(_ context.Context) []func() resource.Resource 
 	return []func() resource.Resource{
 		NewDatabaseResource,
 		NewMssqlLoginResource,
+		NewMssqlUserResource,
 	}
 }
