@@ -230,8 +230,8 @@ func (p *mssqlProvider) DataSources(_ context.Context) []func() datasource.DataS
 // Resources defines the resources implemented in the provider.
 func (p *mssqlProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewDatabaseResource,
 		NewMssqlLoginResource,
+		NewDatabaseResource,
 		NewMssqlUserResource,
 		NewMssqlRoleResource,
 		NewMssqlRoleAssignmentResource,
