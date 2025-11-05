@@ -116,7 +116,7 @@ func (r *roleAssignmentResource) Read(ctx context.Context, req resource.ReadRequ
 		JOIN sys.database_principals dp2 ON drm.member_principal_id = dp2.principal_id
 		WHERE dp1.name = @p1 AND dp2.name = @p2;
 	`, state.Database.ValueString())
-	row := r.client.QueryRowContext(ctx, query, state.RoleName.ValueString(), state.Database.ValueString())
+	row := r.client.QueryRowContext(ctx, query, state.RoleName.ValueString(), state.MemberName.ValueString())
 	var name string
 	err := row.Scan(&name)
 	if err == sql.ErrNoRows {

@@ -31,7 +31,17 @@ resource "mssql_user" "userexample" {
   login    = mssql_login.login_test123.name
 }
 
+resource "mssql_login" "login_test1234" {
+  name             = "testuser11234"
+  password         = "SuperSecretPassword123!"
+  type             = "sql"    # options: "sql" or "windows"
+}
 
+resource "mssql_user" "userexample2" {
+  name     = "example_user2"
+  database = mssql_database.database_test.name
+  login    = mssql_login.login_test1234.name
+}
 
 
 resource "mssql_role" "roletest"{
