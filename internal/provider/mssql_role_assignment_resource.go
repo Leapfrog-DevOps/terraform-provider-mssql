@@ -143,7 +143,7 @@ func (r *roleAssignmentResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 	_, err := r.client.ExecContext(ctx, fmt.Sprintf(`
-		USE [%s];a
+		USE [%s];
 		ALTER ROLE [%s] DROP MEMBER [%s];`,
 		data.Database.ValueString(),
 		data.RoleName.ValueString(),
