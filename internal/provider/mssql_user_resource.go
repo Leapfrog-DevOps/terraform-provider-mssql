@@ -127,7 +127,7 @@ func (r *MssqlUserResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	// Check if user exists
-	row := r.client.QueryRowContext(ctx, "SELECT name FROM sys.database_principals WHERE name = @p1 AND type = 'S'", data.Name.ValueString())
+	row := r.client.QueryRowContext(ctx, "Use [%s];SELECT name FROM sys.database_principals WHERE name = @p1 AND type = 'S'", data.Database.ValueString(), data.Name.ValueString())
 	var name string
 	err = row.Scan(&name)
 	if err == sql.ErrNoRows {
