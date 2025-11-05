@@ -114,30 +114,38 @@ func (r *MssqlUserResource) Create(ctx context.Context, req resource.CreateReque
 
 func (r *MssqlUserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data MssqlUserResourceModel
+
+	// Load the current state into `data`
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Switch to the target database
-	_, err := r.client.ExecContext(ctx, fmt.Sprintf("USE [%s]", data.Database.ValueString()))
-	if err != nil {
-		resp.Diagnostics.AddError("Error switching to database", err.Error())
-		return
-	}
+	// Build the combined SQL query (USE + SELECT)
+	query := fmt.Sprintf(`
+		USE [%s];
+		SELECT name 
+		FROM sys.database_principals 
+		WHERE name = @p1 AND type = 'S';`, data.Database.ValueString())
 
-	// Check if user exists
-	row := r.client.QueryRowContext(ctx, "Use [%s];SELECT name FROM sys.database_principals WHERE name = @p1 AND type = 'S'", data.Database.ValueString(), data.Name.ValueString())
+	// Run the query
+	row := r.client.QueryRowContext(ctx, query, data.Name.ValueString())
+
+	// Read the result
 	var name string
-	err = row.Scan(&name)
-	if err == sql.ErrNoRows {
-		resp.State.RemoveResource(ctx)
-		return
-	} else if err != nil {
+	err := row.Scan(&name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// User doesn't exist — remove from state
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError("Error reading user", err.Error())
 		return
 	}
 
+	// Update state (no change needed if user exists)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
