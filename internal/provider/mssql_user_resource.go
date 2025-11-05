@@ -97,9 +97,9 @@ func (r *MssqlUserResource) Create(ctx context.Context, req resource.CreateReque
 	// Create user in MSSQL
 	var createStmt string
 	if !data.Login.IsNull() && data.Login.ValueString() != "" {
-		createStmt = fmt.Sprintf("CREATE USER [%s] FOR LOGIN [%s]", data.Name.ValueString(), data.Login.ValueString())
+		createStmt = fmt.Sprintf("USE [%s];CREATE USER [%s] FOR LOGIN [%s]", data.Database.ValueString(), data.Name.ValueString(), data.Login.ValueString())
 	} else {
-		createStmt = fmt.Sprintf("CREATE USER [%s] WITHOUT LOGIN", data.Name.ValueString())
+		createStmt = fmt.Sprintf("Use [%s];CREATE USER [%s] WITHOUT LOGIN", data.Database.ValueString(), data.Name.ValueString())
 	}
 
 	_, err = r.client.ExecContext(ctx, createStmt)
