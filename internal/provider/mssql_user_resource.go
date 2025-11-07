@@ -191,7 +191,7 @@ func (r *MssqlUserResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	_, err = r.client.ExecContext(ctx, fmt.Sprintf("DROP USER [%s]", data.Name.ValueString()))
+	_, err = r.client.ExecContext(ctx, fmt.Sprintf("USE [%s]; DROP USER [%s]", data.Database.ValueString(), data.Name.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError("Error deleting user", err.Error())
 		return
