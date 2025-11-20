@@ -2,9 +2,11 @@ terraform {
   required_providers {
     mssql = {
       source = "hashicorp.com/terrafarmers/mssql"
+      version = "1.0.0"
     }
   }
 }
+
 
 provider "mssql" {
   host = "localhost"

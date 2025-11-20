@@ -1,20 +1,26 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider for Microsoft SQL Server (MSSSQL)
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
+![Terraform provider by Leapfrog](./terrafarmers.png)
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
+A Terraform provider for managing Microsoft SQL Server resources including databases, logins, users, roles, and role assignments.
 
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
+## Features
+- **Database Management**: Create and manage SQL Server databases
+- **User Authentication**: Manage SQL Server logins and database users
+- **Role Management**: Create roles and assign users to roles
+- **Data Sources**: Query SQL Server information
+- **Complete CRUD Operations**: Full lifecycle management for all resources
 
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
+## Resources
 
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
+- `mssql_database` - Manage SQL Server databases
+- `mssql_login` - Manage SQL Server logins (server-level authentication)
+- `mssql_user` - Manage database users (database-level access)
+- `mssql_role` - Manage database roles
+- `mssql_role_assignment` - Assign users to roles
 
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
 
-## Requirements
+## Requirements 
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.23
@@ -45,20 +51,91 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
 
-Fill this in for each provider
+1. To use local provider (binary), first .terraformrc file is required which can be made using makefile.
+```
+$ make -f Makefile 
+```
+2. Use the following terraform configuration
+```hcl
+terraform {
+  required_providers {
+    mssql = {
+      source = "hashicorp.com/terrafarmers/mssql"
+    }
+  }
+}
+```
+3. To use the provider from terraform registry. Use the following
+```
+terraform {
+  required_providers {
+    mssql = {
+      source = "Leapfrog-DevOps/mssql"
+      version = "1.0.0"
+    }
+  }
+}
 
+```
+4. To connect to RDS instance
+```
+provider "mssql" {
+  host = "link_to_rds_instance" 
+  user= "sa"
+  password = "YourStrong!Passw0rd"
+}
+```
+5. To create a LOGIN resource
+```
+resource "mssql_login" "login_test123" {
+  name             = "testuser1123"
+  password         = "SuperSecretPassword123!"
+  type             = "sql"    # options: "sql" or "windows"
+}
+```
+6. To create a database
+```
+resource "mssql_database" "database_test" {
+  name = "testdb"
+}
+```
+7. To create a user 
+```
+resource "mssql_user" "userexample" {
+  name     = "example_user"
+  database = mssql_database.database_test.name
+  login    = mssql_login.login_test123.name
+}
+```
+6. To create a database role
+```
+resource "mssql_role" "roletest"{
+  name = "app_user1234"
+  database = mssql_database.database_test.name
+}
+```
+7. To assign a role to a user
+```
+resource "mssql_role_assignment" "assignmenttest"{
+
+  member_name=mssql_user.userexample.name
+  database=mssql_database.database_test.name
+  role_name=mssql_role.roletest.name
+}
+```
 ## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
+This repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). 
 
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+- A resource and a data source (`internal/provider/`),
+- Examples (`examples/`) and generated documentation (`docs/`),
+- Miscellaneous meta files.
 
-To generate or update documentation, run `make generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```shell
-make testacc
+## Running Tests
+In order to test the provider, you can simple run `make test`. Make sure you have all the requirements installed.
 ```
+$ make test
+```
+
